@@ -45,6 +45,26 @@ Not published to npm yet. To pin a release, append a tag: `git:github.com/kunkun
 
 Tools disabled with `tools.<name>.enabled: false` in the pi-lens config make their op report that it is disabled.
 
+## Using with pi-hashline-edit-pro-lean
+
+With the default settings of [pi-hashline-edit-pro-lean](https://github.com/kunkun9527/pi-hashline-edit-pro-lean), `replace` and `insert` pass only anchors, not a file path. pi-lens finds the edited file from the `path` argument, so these edits get no post-edit diagnostics. Only `write` does. Two config changes fix this:
+
+`~/.config/pi-hashline-edit-pro/config.json`, the upstream config file that the lean wrapper also reads:
+
+```json
+{ "requirePath": true }
+```
+
+`replace` and `insert` then require `path`, and hashline checks that it matches the anchors. Diagnostics appear in the same tool result. The cost is the path in each edit call, a few tokens for a relative path.
+
+`~/.pi-lens/config.json`:
+
+```json
+{ "readGuard": { "enabled": false } }
+```
+
+Once pi-lens can see the path, its read-guard blocks edits to files not `read` in the session. That breaks the `anchor_grep` → `replace` flow and costs an extra `read` per file. Hashline anchors already reject stale content, so the guard is redundant here. Without it, edits made with the built-in `edit` tool also skip the read check.
+
 ## Initialization context comparison
 
 <!-- token-benchmark:benchmark:start -->

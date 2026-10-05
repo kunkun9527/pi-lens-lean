@@ -45,6 +45,26 @@ pi install git:github.com/kunkun9527/pi-lens-lean
 
 在 pi-lens 配置里用 `tools.<name>.enabled: false` 关掉的工具，对应 op 会报"已禁用"。
 
+## 和 pi-hashline-edit-pro-lean 一起用
+
+[pi-hashline-edit-pro-lean](https://github.com/kunkun9527/pi-hashline-edit-pro-lean) 默认配置下，`replace`、`insert` 只传锚点，不传文件路径。pi-lens 靠 `path` 参数找到被改的文件，所以这两种编辑改完没有诊断，只有 `write` 有。改两处配置即可解决：
+
+`~/.config/pi-hashline-edit-pro/config.json`（上游的配置文件，lean 版同样读取）：
+
+```json
+{ "requirePath": true }
+```
+
+开启后 `replace`、`insert` 必须带 `path`，hashline 会检查它和锚点是否对应同一个文件。诊断会直接出现在同一次工具结果里。代价是每次编辑多写一个路径，相对路径只要几个 token。
+
+`~/.pi-lens/config.json`：
+
+```json
+{ "readGuard": { "enabled": false } }
+```
+
+pi-lens 能看到路径后，它的 read-guard 会拦下本会话里没 `read` 过的文件的编辑。这样 `anchor_grep` → `replace` 的流程就走不通，每个文件都要多读一次。hashline 锚点本身会拒绝基于过期内容的修改，这层保护是重复的。关掉后，用内置 `edit` 改文件也不再检查是否读过。
+
 ## 初始化上下文占用对比
 
 <!-- token-benchmark:benchmark:start -->
