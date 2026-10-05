@@ -15,7 +15,7 @@
 pi install git:github.com/kunkun9527/pi-lens-lean
 ```
 
-暂未发布到 npm。要固定版本，在后面加 tag：`git:github.com/kunkun9527/pi-lens-lean@v4.3.0-lean.1`。安装前先移除 `npm:pi-lens`，两个同时加载会把 pi-lens 注册两遍。
+暂未发布到 npm。要固定版本，在后面加 tag：`git:github.com/kunkun9527/pi-lens-lean@v4.3.0-lean.1`。安装前先移除 `npm:pi-lens`，两个同时加载会把 pi-lens 注册两遍。npm 可能提示 `@ast-grep/cli` 的安装脚本未批准，不影响 ast-grep 使用，可以忽略。
 
 ## 和上游的区别
 
