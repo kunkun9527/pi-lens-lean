@@ -22,6 +22,7 @@ type CollapsedDisplayService = {
 };
 
 function decorateWithCollapsedDisplay<T extends CollapsedDisplayTool>(tool: T): T {
+  // SAFETY: globalThis is a plain object; the service read from it is shape-checked below.
   const services = globalThis as unknown as Record<PropertyKey, unknown>;
   const candidate = services[COLLAPSED_DISPLAY_SERVICE];
   if (!candidate || typeof candidate !== "object") return tool;
@@ -273,7 +274,7 @@ export function createLensFacade(
     pi.registerTool(decorateWithCollapsedDisplay(createFacade(
       "lens_code",
       "Lens Code",
-      "Find, outline or read code by symbol. Bodies have no edit anchors. help: input=op.",
+      "Find, outline or read code; no edit anchors. Needs: symbol_search query; module_report path; read_symbol path+symbol; read_enclosing path+line; ast_grep_outline path/paths. help: input=op.",
       CODE_PARAMETERS,
       CODE_OPS,
       tools,
@@ -281,7 +282,7 @@ export function createLensFacade(
     pi.registerTool(decorateWithCollapsedDisplay(createFacade(
       "lens",
       "Lens",
-      "LSP diagnostics and navigation, ast-grep, project report and config. source=session reads the cache; empty is not clean, use source=lsp. help: input=op.",
+      "LSP, ast-grep, project report and config. lens_diagnostics: source=session cache; empty != clean; source=lsp probes. input JSON: lsp_navigation {operation}; positions need path+line+symbol or input.character (line/character 1-based); ast_grep_search {lang}+pattern/rule/nodeKind; ast_grep_replace {lang,pattern,rewrite}; lens_diagnostic_mark {message,disposition}+path+line. help: input=op.",
       CHECK_PARAMETERS,
       CHECK_OPS,
       tools,

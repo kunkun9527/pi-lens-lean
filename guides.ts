@@ -11,7 +11,7 @@ export const DIAGNOSTICS_GUIDE = `## Diagnostics recipes
 
 export const LSP_GUIDE = `## lsp_navigation recipes
 Call shape: lens op=lsp_navigation path=<file> line=<1-based> symbol=<name> input={"operation":"..."}
-symbol resolves the character automatically; pass "character" in input instead when needed ("character": -1 also auto-resolves; "symbol#N" picks the Nth match).
+symbol resolves the character automatically; pass a positive "character" in input instead when needed ("character": -1 still needs symbol; "symbol#N" picks the Nth match). Without either, upstream falls back to column 1 and position queries such as hover often return empty.
 
 | Need | operation | extra input |
 |---|---|---|

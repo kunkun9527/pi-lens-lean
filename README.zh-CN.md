@@ -1,7 +1,7 @@
 # pi-lens-lean
 
 <!-- token-benchmark:summary:start -->
-> **Token 基准：Lean 308，上游 `pi-lens@4.3.0` 2,538，减少 87.9%。**
+> **Token 基准：Lean 394，上游 `pi-lens@4.3.0` 2,538，减少 84.5%。**
 <!-- token-benchmark:summary:end -->
 > **完整配置参考：** [查看 Pi Lean Setup](https://github.com/kunkun9527/my-lean-pi-setup)
 
@@ -34,6 +34,7 @@ pi install git:github.com/kunkun9527/pi-lens-lean
 
 * `path` 会落到上游对应的字段：`path`、`filePath`、`file`，或包成一项的 `paths`。
 * 其余上游参数写成 JSON 对象字符串放进 `input`，例如 `{"operation":"definition"}`。
+* 工具描述里写明了每个 op 的必填参数，不调 `help` 也能一次调对；有测试对照固定版本的上游 schema 检查这些说明。`lsp_navigation` 按位置查询时要给 `symbol` 或 `character`，否则上游默认用第 1 列，常常查不到结果。
 * `op: "help"`、`input` 写某个 op，返回该 op 的上游描述、完整 JSON schema，以及（诊断、LSP、ast-grep）用法指南。
 
 ```json
@@ -51,10 +52,10 @@ pi install git:github.com/kunkun9527/pi-lens-lean
 
 | 版本 | 工具与 Prompt 构成 | 合计 |
 | --- | --- | ---: |
-| Lean `pi-lens-lean@4.3.0` | `lens_code` (133) + `lens` (175) | **308** |
+| Lean `pi-lens-lean@4.3.0` | `lens_code` (160) + `lens` (234) | **394** |
 | 上游 `pi-lens@4.3.0` | `lens_diagnostics` (613) + `symbol_search` (352) + `effective_config` (194) + `project_report` (235) + `module_report` (470) + `read_symbol` (233) + `read_enclosing` (322) + `pi_lens_activate_tools` (119) | **2,538** |
 
-节省 **2,230 tokens（87.9%）**。
+节省 **2,144 tokens（84.5%）**。
 测量环境为 Pi 1.0.3 的独立临时进程、空白工作目录与空白配置。排除内置工具、Skills、上下文文件、会话历史、用户消息、无关扩展、运行时 UI 与 Slash Commands；计入扩展的 `before_agent_start` 注入。Token 是按 `ceil(字符数 / 4)` 计算的固定字符代理估算，并非模型 tokenizer 实际计费值。
 <!-- token-benchmark:benchmark:end -->
 

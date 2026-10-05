@@ -18,7 +18,7 @@ const UPSTREAM = {
   ast_grep_outline: schema({ paths: { type: "array", items: { type: "string" } } }, ["paths"]),
   lens_diagnostics: schema({ source: { type: "string", enum: ["session", "lsp"] }, path: { type: "string" }, paths: { type: "array", items: { type: "string" } }, scope: { type: "string" } }),
   lsp_navigation: schema({ operation: { type: "string" }, path: { type: "string" }, line: { type: "number" }, symbol: { type: "string" } }, ["operation"]),
-  ast_grep_search: schema({ pattern: { type: "string" }, lang: { type: "string" }, paths: { type: "array", items: { type: "string" } } }, ["lang"]),
+  ast_grep_search: schema({ pattern: { type: "string" }, lang: { type: "string" }, paths: { type: "array", items: { type: "string" } }, rule: { type: "string" }, nodeKind: { type: "string" } }, ["lang"]),
   ast_grep_replace: schema({ pattern: { type: "string" }, rewrite: { type: "string" }, lang: { type: "string" }, apply: { type: "boolean" } }, ["pattern", "rewrite", "lang"]),
   lens_diagnostic_mark: schema({ filePath: { type: "string" }, line: { type: "number" }, message: { type: "string" }, disposition: { type: "string" } }, ["filePath", "line", "message", "disposition"]),
   project_report: schema({ focus: { type: "string" } }),
@@ -102,6 +102,25 @@ test("routes facade fields onto upstream argument names", async () => {
   assert.deepEqual(calls[0].ctx, { cwd: "." });
 });
 
+test("call shapes named in the descriptions reach upstream", async () => {
+  const { run, calls } = setup();
+  await run("lens_code", { op: "read_symbol", path: "a.ts", symbol: "greet" });
+  await run("lens", { op: "lsp_navigation", path: "a.ts", line: 5, symbol: "greet", input: '{"operation":"hover"}' });
+  await run("lens", { op: "ast_grep_search", path: "src", input: '{"lang":"ts","pattern":"greet($A)"}' });
+  await run("lens", { op: "ast_grep_search", path: "src", input: '{"lang":"ts","rule":"kind: call_expression"}' });
+  await run("lens", { op: "ast_grep_search", path: "src", input: '{"lang":"ts","nodeKind":"call_expression"}' });
+  assert.deepEqual(calls.map((call) => [call.name, call.args]), [
+    ["read_symbol", { path: "a.ts", symbol: "greet" }],
+    ["lsp_navigation", { path: "a.ts", line: 5, symbol: "greet", operation: "hover" }],
+    ["ast_grep_search", { paths: ["src"], lang: "ts", pattern: "greet($A)" }],
+    ["ast_grep_search", { paths: ["src"], lang: "ts", rule: "kind: call_expression" }],
+    ["ast_grep_search", { paths: ["src"], lang: "ts", nodeKind: "call_expression" }],
+  ]);
+  await assert.rejects(run("lens_code", { op: "read_symbol", path: "a.ts" }), /symbol/);
+  await assert.rejects(run("lens", { op: "ast_grep_search", path: "src" }), /lang/);
+  assert.equal(calls.length, 5);
+});
+
 test("rejects invalid input before reaching upstream", async () => {
   const { run, calls } = setup();
   await assert.rejects(run("lens", { op: "lsp_navigation", path: "a.ts", input: "definition" }), /JSON object string/);
@@ -147,15 +166,36 @@ test("real pinned pi-lens provides every op and the guidance marker", async () =
   assert.match(dist, /var SESSION_START_GUIDANCE = \[\s*"\\u\{1F4CC\} pi-lens active/);
   assert.match(dist, /content: `\[pi-lens automated context \\u2014 not a user request\]\r?\n\r?\n\$\{translateGuidanceToolNames\(guidance\.data\.content/);
 
+  const real = await jiti.import("pi-lens", { default: true });
+  const upstreamTools = new Map();
+  const spy = (pi) => real(new Proxy(pi, {
+    get: (target, key) => key === "registerTool"
+      ? (tool) => { upstreamTools.set(tool.name, tool); target.registerTool(tool); }
+      : target[key],
+  }));
   const host = createPi();
-  createLensFacade()(host.pi);
+  createLensFacade(spy)(host.pi);
   assert.deepEqual([...host.tools.keys()], ["lens_code", "lens"]);
   assert.deepEqual(host.activeCalls, []);
+  // Facade field names for upstream path fields.
+  const FACADE_NAME = { filePath: "path", file: "path", paths: "path" };
   for (const name of ["lens_code", "lens"]) {
     const tool = host.tools.get(name);
     for (const op of tool.parameters.properties.op.enum.filter((op) => op !== "help")) {
       const help = await tool.execute("h", { op: "help", input: op });
       assert.match(help.content[0].text, /"properties"/, `${name} ${op}`);
+      // Every upstream required argument is named next to its op, so a cold call succeeds.
+      const required = upstreamTools.get(op).parameters.required ?? [];
+      if (required.length === 0) continue;
+      const at = tool.description.indexOf(op);
+      assert.notEqual(at, -1, `${name} description names ${op}`);
+      // Skip the op name itself: read_symbol already contains "symbol".
+      const start = at + op.length;
+      const end = tool.description.indexOf(";", start);
+      const hint = tool.description.slice(start, end === -1 ? undefined : end);
+      for (const field of required) {
+        assert.ok(hint.includes(FACADE_NAME[field] ?? field), `${name} ${op} hint names ${field}: ${hint}`);
+      }
     }
   }
 });

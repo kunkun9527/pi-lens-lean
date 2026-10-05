@@ -1,7 +1,7 @@
 # pi-lens-lean
 
 <!-- token-benchmark:summary:start -->
-> **Token benchmark: Lean 308, upstream `pi-lens@4.3.0` 2,538 — 87.9% fewer.**
+> **Token benchmark: Lean 394, upstream `pi-lens@4.3.0` 2,538 — 84.5% fewer.**
 <!-- token-benchmark:summary:end -->
 > **Full setup reference:** [Pi Lean Setup](https://github.com/kunkun9527/my-lean-pi-setup)
 
@@ -34,6 +34,7 @@ Not published to npm yet. To pin a release, append a tag: `git:github.com/kunkun
 
 * `path` lands on the matching upstream field: `path`, `filePath`, `file`, or a one-item `paths`.
 * Other upstream arguments go in `input` as a JSON object string, for example `{"operation":"definition"}`.
+* The tool descriptions name each op's required arguments, so a first call works without `help`. A test checks them against the pinned upstream schemas. For position-based `lsp_navigation` operations, pass `symbol` or `character`; otherwise upstream uses column 1 and often returns nothing.
 * `op: "help"` with `input` set to an op returns that op's upstream description, full JSON schema and, for diagnostics, LSP and ast-grep, a usage guide.
 
 ```json
@@ -51,10 +52,10 @@ With only this extension enabled, its recurring model-facing initialization cont
 
 | Variant | Tool and prompt contribution | Total |
 | --- | --- | ---: |
-| Lean `pi-lens-lean@4.3.0` | `lens_code` (133) + `lens` (175) | **308** |
+| Lean `pi-lens-lean@4.3.0` | `lens_code` (160) + `lens` (234) | **394** |
 | Upstream `pi-lens@4.3.0` | `lens_diagnostics` (613) + `symbol_search` (352) + `effective_config` (194) + `project_report` (235) + `module_report` (470) + `read_symbol` (233) + `read_enclosing` (322) + `pi_lens_activate_tools` (119) | **2,538** |
 
-This saves **2,230 tokens (87.9%)**.
+This saves **2,144 tokens (84.5%)**.
 Measured with Pi 1.0.3 in separate temporary processes with empty working directories and configuration. Built-in tools, skills, context files, session history, user messages, unrelated extensions, runtime UI, and slash commands are excluded; `before_agent_start` additions are included. Tokens are a fixed character-proxy estimate using `ceil(characters / 4)`, not provider tokenizer billing.
 <!-- token-benchmark:benchmark:end -->
 
